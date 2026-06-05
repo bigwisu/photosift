@@ -11,10 +11,11 @@ const DateExtractor = require('./dateExtractor');
  * - File organization
  */
 class FileProcessor {
-  constructor(database, targetDir, inputDir) {
+  constructor(database, targetDir, inputDir, duplicatesDir) {
     this.db = database;
     this.targetDir = targetDir;
     this.inputDir = inputDir;
+    this.duplicatesDir = duplicatesDir;
     this.dateExtractor = new DateExtractor();
   }
 
@@ -124,17 +125,68 @@ class FileProcessor {
   }
 
   /**
-   * Process file from input directory (for scanning)
-   * Similar to upload but handles existing files on disk
+   * Index file from target directory (for building initial database)
+   * Does NOT move files, only indexes them in database
+   */
+  async indexTargetFile(filePath, originalFilename) {
+    // Step 1: Compute hash from file stream
+    const hash = await this.computeHashFromStream(filePath);
+
+    // Step 2: Check if already indexed
+    const existing = this.db.findDuplicateByHash(hash);
+    if (existing) {
+      return {
+        success: true,
+        isDuplicate: true,
+        existingFile: existing,
+        message: `File already indexed: ${originalFilename}`
+      };
+    }
+
+    // Step 3: Extract date
+    const { date, source } = this.dateExtractor.extractDate(filePath, originalFilename);
+
+    // Step 4: Get file stats
+    const stats = fs.statSync(filePath);
+    const mimeType = this.getMimeType(originalFilename);
+
+    // Step 5: Calculate relative path (relative to target dir)
+    const relativePath = path.relative(this.targetDir, filePath);
+
+    // Step 6: Index in database
+    const fileData = {
+      relative_path: relativePath,
+      hash: hash,
+      original_filename: originalFilename,
+      file_size: stats.size,
+      mime_type: mimeType,
+      extracted_date: this.dateExtractor.formatDateForStorage(date),
+      date_source: source,
+      indexed_at: new Date().toISOString()
+    };
+
+    this.db.insertFile(fileData);
+
+    return {
+      success: true,
+      isDuplicate: false,
+      file: fileData,
+      message: 'File indexed successfully'
+    };
+  }
+
+  /**
+   * Process file from input directory (for scanning new uploads)
+   * Checks against database and moves duplicates
    */
   async processInputFile(filePath, originalFilename) {
     // Step 1: Compute hash from file stream
     const hash = await this.computeHashFromStream(filePath);
 
-    // Step 2: Check for duplicates
+    // Step 2: Check for duplicates against indexed files
     const duplicate = this.db.findDuplicateByHash(hash);
     if (duplicate) {
-      // Move duplicate to /input/duplicates/ subdirectory
+      // Move duplicate to /duplicates/ directory
       await this.moveToDuplicatesFolder(filePath, originalFilename);
       return {
         success: true,
@@ -154,10 +206,10 @@ class FileProcessor {
       fs.mkdirSync(targetSubDir, { recursive: true });
     }
 
-    // Step 5: Copy file to target location
+    // Step 5: Move file to target location (not copy, to clear input)
     const targetFilename = this.generateUniqueFilename(targetSubDir, originalFilename);
     const targetPath = path.join(targetSubDir, targetFilename);
-    fs.copyFileSync(filePath, targetPath);
+    fs.renameSync(filePath, targetPath);
 
     // Step 6: Get file stats
     const stats = fs.statSync(targetPath);
@@ -184,21 +236,20 @@ class FileProcessor {
       success: true,
       isDuplicate: false,
       file: fileData,
-      message: 'File indexed successfully'
+      message: 'File processed and indexed successfully'
     };
   }
 
   /**
-   * Move duplicate file to /input/duplicates/ subdirectory
+   * Move duplicate file to dedicated duplicates directory (outside /input)
    * NEVER delete duplicates - always move for user review
    */
   async moveToDuplicatesFolder(filePath, filename) {
-    const duplicatesDir = path.join(this.inputDir, 'duplicates');
-    if (!fs.existsSync(duplicatesDir)) {
-      fs.mkdirSync(duplicatesDir, { recursive: true });
+    if (!fs.existsSync(this.duplicatesDir)) {
+      fs.mkdirSync(this.duplicatesDir, { recursive: true });
     }
 
-    const targetPath = path.join(duplicatesDir, filename);
+    const targetPath = path.join(this.duplicatesDir, filename);
     
     // Handle filename conflicts in duplicates folder
     let finalPath = targetPath;
@@ -206,7 +257,7 @@ class FileProcessor {
     while (fs.existsSync(finalPath)) {
       const ext = path.extname(filename);
       const base = path.basename(filename, ext);
-      finalPath = path.join(duplicatesDir, `${base}_${counter}${ext}`);
+      finalPath = path.join(this.duplicatesDir, `${base}_${counter}${ext}`);
       counter++;
     }
 

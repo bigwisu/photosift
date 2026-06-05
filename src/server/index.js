@@ -14,10 +14,11 @@ const PORT = process.env.PORT || 3000;
 const DB_PATH = process.env.DB_PATH || '/app/data/photos.db';
 const TARGET_DIR = process.env.TARGET_DIR || '/target';
 const INPUT_DIR = process.env.INPUT_DIR || '/input';
+const DUPLICATES_DIR = process.env.DUPLICATES_DIR || '/duplicates';
 const INDEXER_THROTTLE_MS = parseInt(process.env.INDEXER_THROTTLE_MS || '500');
 
 // Ensure directories exist
-[TARGET_DIR, INPUT_DIR].forEach(dir => {
+[TARGET_DIR, INPUT_DIR, DUPLICATES_DIR].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -25,8 +26,8 @@ const INDEXER_THROTTLE_MS = parseInt(process.env.INDEXER_THROTTLE_MS || '500');
 
 // Initialize components
 const database = new PhotoDatabase(DB_PATH);
-const fileProcessor = new FileProcessor(database, TARGET_DIR, INPUT_DIR);
-const indexer = new BackgroundIndexer(database, fileProcessor, INPUT_DIR, INDEXER_THROTTLE_MS);
+const fileProcessor = new FileProcessor(database, TARGET_DIR, INPUT_DIR, DUPLICATES_DIR);
+const indexer = new BackgroundIndexer(database, fileProcessor, INPUT_DIR, TARGET_DIR, INDEXER_THROTTLE_MS);
 
 // Express app setup
 const app = express();
@@ -144,16 +145,34 @@ app.post('/api/upload/multiple', upload.array('files', 50), async (req, res) => 
 });
 
 /**
- * POST /api/indexer/start
- * Start background indexing of input directory
+ * POST /api/indexer/index-target
+ * Start indexing target directory (build initial database)
  */
-app.post('/api/indexer/start', async (req, res) => {
+app.post('/api/indexer/index-target', async (req, res) => {
   try {
-    const jobId = await indexer.startIndexing();
+    const jobId = await indexer.startIndexingTarget();
     res.json({
       success: true,
       jobId,
-      message: 'Indexing started'
+      message: 'Target directory indexing started'
+    });
+  } catch (error) {
+    console.error('Indexer start error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/indexer/scan-input
+ * Start scanning input directory (process new uploads)
+ */
+app.post('/api/indexer/scan-input', async (req, res) => {
+  try {
+    const jobId = await indexer.startScanningInput();
+    res.json({
+      success: true,
+      jobId,
+      message: 'Input directory scanning started'
     });
   } catch (error) {
     console.error('Indexer start error:', error);
@@ -281,6 +300,7 @@ app.listen(PORT, () => {
   console.log(`Database: ${DB_PATH}`);
   console.log(`Target directory: ${TARGET_DIR}`);
   console.log(`Input directory: ${INPUT_DIR}`);
+  console.log(`Duplicates directory: ${DUPLICATES_DIR}`);
   console.log(`Indexer throttle: ${INDEXER_THROTTLE_MS}ms`);
 });
 

@@ -13,12 +13,15 @@ services:
       - /path/to/nas/photos:/target
       # Input directory for scanning (SMB/WebDAV sync folder)
       - /path/to/input/folder:/input
+      # Duplicates directory (separate from input)
+      - /path/to/duplicates:/duplicates
     environment:
       - NODE_ENV=production
       - PORT=3000
       - DB_PATH=/app/data/photos.db
       - TARGET_DIR=/target
       - INPUT_DIR=/input
+      - DUPLICATES_DIR=/duplicates
       - INDEXER_THROTTLE_MS=500
     restart: unless-stopped
     healthcheck:
