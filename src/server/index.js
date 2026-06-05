@@ -65,7 +65,11 @@ const upload = multer({
 app.get('/api/stats', (req, res) => {
   try {
     const stats = database.getStats();
-    res.json(stats);
+    const migration = database.getMigrationStatus();
+    res.json({
+      ...stats,
+      migration
+    });
   } catch (error) {
     console.error('Error getting stats:', error);
     res.status(500).json({ error: 'Failed to get statistics' });
@@ -302,6 +306,17 @@ app.listen(PORT, () => {
   console.log(`Input directory: ${INPUT_DIR}`);
   console.log(`Duplicates directory: ${DUPLICATES_DIR}`);
   console.log(`Indexer throttle: ${INDEXER_THROTTLE_MS}ms`);
+  
+  // Check migration status on startup
+  const migrationStatus = database.getMigrationStatus();
+  if (migrationStatus.needsUpdate > 0) {
+    console.log(`\n⚠️  DATABASE MIGRATION NOTICE:`);
+    console.log(`   ${migrationStatus.needsUpdate} files need mtime update (out of ${migrationStatus.totalFiles} total)`);
+    console.log(`   These files will be re-indexed on the next scan to enable incremental scanning.`);
+    console.log(`   This is a one-time operation per file.\n`);
+  } else if (migrationStatus.totalFiles > 0) {
+    console.log(`✓ All ${migrationStatus.totalFiles} files have mtime tracking enabled`);
+  }
 });
 
 // Graceful shutdown

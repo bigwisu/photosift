@@ -28,9 +28,13 @@ class PhotoDatabase {
         extracted_date TEXT NOT NULL,
         date_source TEXT NOT NULL,
         indexed_at TEXT NOT NULL,
+        mtime INTEGER NOT NULL DEFAULT 0,
         UNIQUE(hash)
       );
     `);
+    
+    // Migration: Add mtime column if it doesn't exist (for existing databases)
+    this.migrateMtimeColumn();
 
     // Create index on hash for fast duplicate lookups
     this.db.exec(`
@@ -53,6 +57,45 @@ class PhotoDatabase {
     `);
   }
 
+  /**
+   * Migration: Add mtime column to existing databases
+   * For databases with 150GB+ of indexed files, this is critical
+   */
+  migrateMtimeColumn() {
+    // Check if mtime column exists
+    const tableInfo = this.db.prepare("PRAGMA table_info(indexed_files)").all();
+    const hasMtimeColumn = tableInfo.some(col => col.name === 'mtime');
+    
+    if (!hasMtimeColumn) {
+      console.log('Migrating database: Adding mtime column...');
+      
+      // Add mtime column with default value 0
+      this.db.exec(`ALTER TABLE indexed_files ADD COLUMN mtime INTEGER NOT NULL DEFAULT 0`);
+      
+      console.log('Migration complete: mtime column added');
+      console.log('Note: Existing files have mtime=0 and will be re-indexed on next scan');
+      console.log('This ensures accurate incremental scanning going forward');
+    }
+  }
+
+  /**
+   * Get count of files that need mtime update (migration status check)
+   */
+  getMigrationStatus() {
+    const result = this.db.prepare(`
+      SELECT
+        COUNT(*) as total_files,
+        SUM(CASE WHEN mtime = 0 THEN 1 ELSE 0 END) as needs_update
+      FROM indexed_files
+    `).get();
+    
+    return {
+      totalFiles: result.total_files,
+      needsUpdate: result.needs_update,
+      migrationComplete: result.needs_update === 0
+    };
+  }
+
   // Check if file hash already exists (duplicate detection)
   findDuplicateByHash(hash) {
     const stmt = this.db.prepare('SELECT * FROM indexed_files WHERE hash = ?');
@@ -69,9 +112,9 @@ class PhotoDatabase {
   insertFile(fileData) {
     const stmt = this.db.prepare(`
       INSERT INTO indexed_files (
-        relative_path, hash, original_filename, file_size, 
-        mime_type, extracted_date, date_source, indexed_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        relative_path, hash, original_filename, file_size,
+        mime_type, extracted_date, date_source, indexed_at, mtime
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     return stmt.run(
@@ -82,7 +125,29 @@ class PhotoDatabase {
       fileData.mime_type,
       fileData.extracted_date,
       fileData.date_source,
-      fileData.indexed_at
+      fileData.indexed_at,
+      fileData.mtime
+    );
+  }
+
+  // Update indexed file (for rescans when file has changed)
+  updateFile(fileData) {
+    const stmt = this.db.prepare(`
+      UPDATE indexed_files
+      SET hash = ?, file_size = ?, mime_type = ?,
+          extracted_date = ?, date_source = ?, indexed_at = ?, mtime = ?
+      WHERE relative_path = ?
+    `);
+    
+    return stmt.run(
+      fileData.hash,
+      fileData.file_size,
+      fileData.mime_type,
+      fileData.extracted_date,
+      fileData.date_source,
+      fileData.indexed_at,
+      fileData.mtime,
+      fileData.relative_path
     );
   }
 
