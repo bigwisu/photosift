@@ -4,6 +4,25 @@ const path = require('path');
 const DateExtractor = require('./dateExtractor');
 
 /**
+ * Move file across filesystems (handles EXDEV error)
+ * Uses copy + delete instead of rename when crossing filesystem boundaries
+ */
+function moveFile(sourcePath, destPath) {
+  try {
+    // Try rename first (fastest if same filesystem)
+    fs.renameSync(sourcePath, destPath);
+  } catch (error) {
+    if (error.code === 'EXDEV') {
+      // Cross-device link error - copy and delete instead
+      fs.copyFileSync(sourcePath, destPath);
+      fs.unlinkSync(sourcePath);
+    } else {
+      throw error;
+    }
+  }
+}
+
+/**
  * File processor handles:
  * - SHA-256 hash computation during upload stream (before saving to disk)
  * - Date extraction
@@ -87,10 +106,10 @@ class FileProcessor {
         fs.mkdirSync(targetSubDir, { recursive: true });
       }
 
-      // Step 6: Move file to target location
+      // Step 6: Move file to target location (cross-filesystem safe)
       const targetFilename = this.generateUniqueFilename(targetSubDir, originalFilename);
       const targetPath = path.join(targetSubDir, targetFilename);
-      fs.renameSync(tempPath, targetPath);
+      moveFile(tempPath, targetPath);
 
       // Step 7: Calculate relative path for database
       const relativePath = path.join(datePath, targetFilename);
@@ -206,10 +225,10 @@ class FileProcessor {
       fs.mkdirSync(targetSubDir, { recursive: true });
     }
 
-    // Step 5: Move file to target location (not copy, to clear input)
+    // Step 5: Move file to target location (cross-filesystem safe)
     const targetFilename = this.generateUniqueFilename(targetSubDir, originalFilename);
     const targetPath = path.join(targetSubDir, targetFilename);
-    fs.renameSync(filePath, targetPath);
+    moveFile(filePath, targetPath);
 
     // Step 6: Get file stats
     const stats = fs.statSync(targetPath);
@@ -261,7 +280,7 @@ class FileProcessor {
       counter++;
     }
 
-    fs.renameSync(filePath, finalPath);
+    moveFile(filePath, finalPath);
   }
 
   /**
