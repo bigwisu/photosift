@@ -4,7 +4,7 @@
 FROM node:18-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY src/frontend/package*.json ./
-RUN npm ci
+RUN npm install
 COPY src/frontend/ ./
 RUN npm run build
 
@@ -14,7 +14,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # Copy backend source
 COPY src/server/ ./src/server/
