@@ -81,6 +81,7 @@ class BackgroundIndexer {
   /**
    * Index all files in a folder recursively
    * Processes files one-by-one with throttling
+   * INCREMENTAL: Tracks skipped files for performance metrics
    * @param {string} mode - 'target' for indexing existing files, 'input' for processing new uploads
    */
   async indexFolder(folderPath, jobId, mode = 'input') {
@@ -90,6 +91,7 @@ class BackgroundIndexer {
       const totalFiles = files.length;
 
       let processedFiles = 0;
+      let skippedFiles = 0;
       let duplicatesFound = 0;
 
       for (const filePath of files) {
@@ -110,14 +112,18 @@ class BackgroundIndexer {
           if (result.isDuplicate) {
             duplicatesFound++;
           }
+          
+          if (result.skipped) {
+            skippedFiles++;
+          }
 
           processedFiles++;
 
           // Update job progress
           this.db.updateIndexJobProgress(jobId, processedFiles, duplicatesFound, filePath);
 
-          // Throttle: wait before processing next file
-          if (this.throttleMs > 0) {
+          // Throttle: wait before processing next file (skip throttle for skipped files)
+          if (this.throttleMs > 0 && !result.skipped) {
             await this.sleep(this.throttleMs);
           }
         } catch (error) {
@@ -131,7 +137,7 @@ class BackgroundIndexer {
       this.isRunning = false;
       this.currentJobId = null;
 
-      console.log(`Indexing completed: ${processedFiles}/${totalFiles} files processed, ${duplicatesFound} duplicates found`);
+      console.log(`Indexing completed: ${processedFiles}/${totalFiles} files processed (${skippedFiles} skipped, ${duplicatesFound} duplicates)`);
     } catch (error) {
       console.error('Indexing failed:', error);
       this.isRunning = false;

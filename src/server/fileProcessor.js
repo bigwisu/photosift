@@ -123,7 +123,8 @@ class FileProcessor {
         mime_type: mimeType,
         extracted_date: this.dateExtractor.formatDateForStorage(date),
         date_source: source,
-        indexed_at: new Date().toISOString()
+        indexed_at: new Date().toISOString(),
+        mtime: Date.now()
       };
 
       this.db.insertFile(fileData);
@@ -146,33 +147,57 @@ class FileProcessor {
   /**
    * Index file from target directory (for building initial database)
    * Does NOT move files, only indexes them in database
+   * INCREMENTAL: Skips files that haven't changed since last scan
+   * MIGRATION-SAFE: Handles mtime=0 for migrated databases
    */
   async indexTargetFile(filePath, originalFilename) {
-    // Step 1: Compute hash from file stream
+    // Step 1: Get file stats first (for mtime check)
+    const stats = fs.statSync(filePath);
+    const fileMtime = Math.floor(stats.mtimeMs);
+    
+    // Step 2: Calculate relative path (relative to target dir)
+    const relativePath = path.relative(this.targetDir, filePath);
+    
+    // Step 3: Check if file already indexed and unchanged
+    const existingByPath = this.db.findByPath(relativePath);
+    if (existingByPath) {
+      // Migration check: If mtime=0, this is from old database - must reprocess
+      if (existingByPath.mtime === 0) {
+        // File from migrated database, needs mtime update
+        // Will reprocess below to set proper mtime
+      } else if (existingByPath.mtime === fileMtime && existingByPath.file_size === stats.size) {
+        // File unchanged, skip processing
+        return {
+          success: true,
+          isDuplicate: false,
+          skipped: true,
+          existingFile: existingByPath,
+          message: `File unchanged, skipped: ${originalFilename}`
+        };
+      }
+      // File modified or needs migration, will reprocess below
+    }
+
+    // Step 4: Compute hash from file stream
     const hash = await this.computeHashFromStream(filePath);
 
-    // Step 2: Check if already indexed
-    const existing = this.db.findDuplicateByHash(hash);
-    if (existing) {
+    // Step 5: Check if hash already exists (duplicate detection)
+    const existingByHash = this.db.findDuplicateByHash(hash);
+    if (existingByHash && existingByHash.relative_path !== relativePath) {
+      // Different file with same hash = duplicate
       return {
         success: true,
         isDuplicate: true,
-        existingFile: existing,
-        message: `File already indexed: ${originalFilename}`
+        existingFile: existingByHash,
+        message: `Duplicate file found: ${originalFilename}`
       };
     }
 
-    // Step 3: Extract date
+    // Step 6: Extract date
     const { date, source } = this.dateExtractor.extractDate(filePath, originalFilename);
-
-    // Step 4: Get file stats
-    const stats = fs.statSync(filePath);
     const mimeType = this.getMimeType(originalFilename);
 
-    // Step 5: Calculate relative path (relative to target dir)
-    const relativePath = path.relative(this.targetDir, filePath);
-
-    // Step 6: Index in database
+    // Step 7: Prepare file data
     const fileData = {
       relative_path: relativePath,
       hash: hash,
@@ -181,16 +206,23 @@ class FileProcessor {
       mime_type: mimeType,
       extracted_date: this.dateExtractor.formatDateForStorage(date),
       date_source: source,
-      indexed_at: new Date().toISOString()
+      indexed_at: new Date().toISOString(),
+      mtime: fileMtime
     };
 
-    this.db.insertFile(fileData);
+    // Step 8: Insert or update in database
+    if (existingByPath) {
+      this.db.updateFile(fileData);
+    } else {
+      this.db.insertFile(fileData);
+    }
 
     return {
       success: true,
       isDuplicate: false,
+      skipped: false,
       file: fileData,
-      message: 'File indexed successfully'
+      message: existingByPath ? 'File re-indexed (modified)' : 'File indexed successfully'
     };
   }
 
@@ -246,7 +278,8 @@ class FileProcessor {
       mime_type: mimeType,
       extracted_date: this.dateExtractor.formatDateForStorage(date),
       date_source: source,
-      indexed_at: new Date().toISOString()
+      indexed_at: new Date().toISOString(),
+      mtime: Math.floor(stats.mtimeMs)
     };
 
     this.db.insertFile(fileData);
