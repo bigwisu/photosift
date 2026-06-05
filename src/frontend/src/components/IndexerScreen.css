@@ -1,0 +1,325 @@
+.indexer-screen {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.indexer-card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 900px;
+}
+
+.indexer-card h2 {
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-size: 1.75rem;
+}
+
+.description {
+  color: #666;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.status-section {
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.status-header h3 {
+  color: #333;
+  font-size: 1.25rem;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.status-badge.running {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.idle {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.current-job {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.job-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.job-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.job-label {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.job-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.3s ease;
+}
+
+.last-file {
+  font-size: 0.85rem;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.control-button {
+  flex: 1;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.control-button.start {
+  background: #4caf50;
+  color: white;
+}
+
+.control-button.start:hover:not(:disabled) {
+  background: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.control-button.stop {
+  background: #f44336;
+  color: white;
+}
+
+.control-button.stop:hover:not(:disabled) {
+  background: #da190b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+}
+
+.control-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.throttle-section {
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.throttle-section h3 {
+  color: #333;
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.throttle-description {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.throttle-control {
+  display: flex;
+  gap: 1rem;
+}
+
+.throttle-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.throttle-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.throttle-button {
+  padding: 0.75rem 2rem;
+  background: #667eea;
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.throttle-button:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.jobs-section h3 {
+  color: #333;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.no-jobs {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
+}
+
+.jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.job-item {
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.3s ease;
+}
+
+.job-item:hover {
+  background: #f0f0f0;
+  transform: translateX(4px);
+}
+
+.job-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.job-id {
+  font-weight: 600;
+  color: #333;
+}
+
+.job-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.job-status.running {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.job-status.completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.job-status.failed {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.job-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.job-detail {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.job-stats-row {
+  display: flex;
+  gap: 1rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.job-time {
+  color: #999;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .indexer-card {
+    padding: 1.5rem;
+  }
+
+  .control-buttons {
+    flex-direction: column;
+  }
+
+  .throttle-control {
+    flex-direction: column;
+  }
+
+  .job-info {
+    grid-template-columns: 1fr;
+  }
+
+  .job-stats-row {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+
+/* Made with Bob */

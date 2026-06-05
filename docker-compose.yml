@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  photosift:
+    build: .
+    container_name: photosift
+    ports:
+      - "3000:3000"
+    volumes:
+      # SQLite database storage
+      - ./data:/app/data
+      # Target directory for organized photos (NAS mount point)
+      - /path/to/nas/photos:/target
+      # Input directory for scanning (SMB/WebDAV sync folder)
+      - /path/to/input/folder:/input
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_PATH=/app/data/photos.db
+      - TARGET_DIR=/target
+      - INPUT_DIR=/input
+      - INDEXER_THROTTLE_MS=500
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+# Volume definitions (optional, for named volumes)
+volumes:
+  photosift-data:
+    driver: local
+
+# Made with Bob
