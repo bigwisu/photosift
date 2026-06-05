@@ -23,7 +23,7 @@ COPY src/server/ ./src/server/
 COPY --from=frontend-builder /app/frontend/build ./src/frontend/build
 
 # Create volume mount points
-RUN mkdir -p /app/data /target /input
+RUN mkdir -p /app/data /target /input /duplicates
 
 # Environment variables
 ENV NODE_ENV=production
@@ -31,6 +31,7 @@ ENV PORT=3000
 ENV DB_PATH=/app/data/photos.db
 ENV TARGET_DIR=/target
 ENV INPUT_DIR=/input
+ENV DUPLICATES_DIR=/duplicates
 ENV INDEXER_THROTTLE_MS=500
 
 # Expose port

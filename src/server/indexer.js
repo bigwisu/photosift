@@ -6,10 +6,11 @@ const path = require('path');
  * Processes files one-by-one with pause/resume capability
  */
 class BackgroundIndexer {
-  constructor(database, fileProcessor, inputDir, throttleMs = 500) {
+  constructor(database, fileProcessor, inputDir, targetDir, throttleMs = 500) {
     this.db = database;
     this.fileProcessor = fileProcessor;
     this.inputDir = inputDir;
+    this.targetDir = targetDir;
     this.throttleMs = throttleMs;
     this.isRunning = false;
     this.currentJobId = null;
@@ -17,10 +18,26 @@ class BackgroundIndexer {
   }
 
   /**
+   * Start indexing target directory (for building initial database)
+   * Returns job ID for tracking progress
+   */
+  async startIndexingTarget() {
+    return this.startIndexing(this.targetDir, 'target');
+  }
+
+  /**
+   * Start scanning input directory (for processing new uploads)
+   * Returns job ID for tracking progress
+   */
+  async startScanningInput() {
+    return this.startIndexing(this.inputDir, 'input');
+  }
+
+  /**
    * Start indexing a folder
    * Returns job ID for tracking progress
    */
-  async startIndexing(folderPath = this.inputDir) {
+  async startIndexing(folderPath, mode = 'input') {
     if (this.isRunning) {
       throw new Error('Indexer is already running');
     }
@@ -31,7 +48,7 @@ class BackgroundIndexer {
     this.shouldStop = false;
 
     // Start indexing in background (don't await)
-    this.indexFolder(folderPath, this.currentJobId).catch(error => {
+    this.indexFolder(folderPath, this.currentJobId, mode).catch(error => {
       console.error('Indexing error:', error);
       this.isRunning = false;
     });
@@ -64,8 +81,9 @@ class BackgroundIndexer {
   /**
    * Index all files in a folder recursively
    * Processes files one-by-one with throttling
+   * @param {string} mode - 'target' for indexing existing files, 'input' for processing new uploads
    */
-  async indexFolder(folderPath, jobId) {
+  async indexFolder(folderPath, jobId, mode = 'input') {
     try {
       // Get all files recursively
       const files = this.getAllFiles(folderPath);
@@ -83,7 +101,11 @@ class BackgroundIndexer {
 
         try {
           const filename = path.basename(filePath);
-          const result = await this.fileProcessor.processInputFile(filePath, filename);
+          
+          // Use different processing method based on mode
+          const result = mode === 'target'
+            ? await this.fileProcessor.indexTargetFile(filePath, filename)
+            : await this.fileProcessor.processInputFile(filePath, filename);
 
           if (result.isDuplicate) {
             duplicatesFound++;

@@ -36,15 +36,29 @@ function IndexerScreen({ onIndexComplete }) {
     }
   };
 
-  const handleStart = async () => {
+  const handleIndexTarget = async () => {
     setLoading(true);
     try {
-      await axios.post('/api/indexer/start');
+      await axios.post('/api/indexer/index-target');
       fetchStatus();
       fetchJobs();
     } catch (error) {
-      console.error('Error starting indexer:', error);
-      alert(error.response?.data?.error || 'Failed to start indexer');
+      console.error('Error starting target indexing:', error);
+      alert(error.response?.data?.error || 'Failed to start target indexing');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleScanInput = async () => {
+    setLoading(true);
+    try {
+      await axios.post('/api/indexer/scan-input');
+      fetchStatus();
+      fetchJobs();
+    } catch (error) {
+      console.error('Error starting input scan:', error);
+      alert(error.response?.data?.error || 'Failed to start input scan');
     } finally {
       setLoading(false);
     }
@@ -80,7 +94,8 @@ function IndexerScreen({ onIndexComplete }) {
       <div className="indexer-card">
         <h2>🔍 Background Indexer</h2>
         <p className="description">
-          Scan and index photos from the input directory. Duplicates will be moved to the duplicates folder.
+          <strong>Step 1:</strong> Index Target - Build database from existing photos in /target<br/>
+          <strong>Step 2:</strong> Scan Input - Process new uploads from /input and detect duplicates
         </p>
 
         <div className="status-section">
@@ -125,11 +140,18 @@ function IndexerScreen({ onIndexComplete }) {
 
           <div className="control-buttons">
             <button
-              onClick={handleStart}
+              onClick={handleIndexTarget}
               disabled={isRunning || loading}
-              className="control-button start"
+              className="control-button index-target"
             >
-              {loading ? '⏳ Starting...' : '▶️ Start Indexing'}
+              {loading ? '⏳ Starting...' : '📁 Index Target'}
+            </button>
+            <button
+              onClick={handleScanInput}
+              disabled={isRunning || loading}
+              className="control-button scan-input"
+            >
+              {loading ? '⏳ Starting...' : '🔍 Scan Input'}
             </button>
             <button
               onClick={handleStop}

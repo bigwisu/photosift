@@ -17,8 +17,8 @@ This is a **planned but not yet implemented** web-based photo backup system. All
   - Android: `IMG_YYYYMMDD_HHMMSS.jpg`
 - **Duplicate Detection**: SHA-256 hash MUST be computed during upload stream (before saving to disk)
 - **Database**: SQLite with `indexed_files` (PK: relative_path) and `index_jobs` tables
-- **Volume Mounts**: `/target` (photos), `/app/data` (SQLite DB), `/input` (SMB/WebDAV sync folder)
-- **Duplicate Handling**: Duplicates from `/input` scan MUST be moved to `/input/duplicates/` (not deleted)
+- **Volume Mounts**: `/target` (photos), `/app/data` (SQLite DB), `/input` (scan folder), `/duplicates` (duplicate files)
+- **Duplicate Handling**: Duplicates from `/input` scan MUST be moved to `/duplicates/` directory (separate from /input, not deleted)
 - **Indexing Throttle**: Background indexer MUST support configurable delay between files (default 500ms)
 - **Target Directory Structure**: Photos organized as `/target/YYYY/MM/` or `/target/YYYY/MM-custom-name/`
 

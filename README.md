@@ -100,13 +100,20 @@ http://localhost:3000
 3. Upload single or multiple files
 4. View results: successful uploads, duplicates detected, failed uploads
 
-### Scan Existing Photos
+### Index & Scan Photos
 
+**Initial Setup (First Time):**
 1. Navigate to the **Indexer** tab
-2. Click "Start Indexing" to scan the `/input` directory
+2. Click "📁 Index Target" to build database from existing photos in `/target`
+3. Wait for indexing to complete
+
+**Daily Use (Process New Uploads):**
+1. Navigate to the **Indexer** tab
+2. Click "🔍 Scan Input" to process new photos from `/input`
 3. Monitor progress in real-time
-4. Duplicates are automatically moved to `/input/duplicates/`
-5. Adjust throttle delay if needed (default 500ms)
+4. Duplicates are automatically moved to `/duplicates/` directory
+5. New photos are moved to `/target/YYYY/MM/` and indexed
+6. Adjust throttle delay if needed (default 500ms)
 
 ### View Statistics
 
@@ -124,6 +131,7 @@ PORT=3000                          # Web server port
 DB_PATH=/app/data/photos.db        # SQLite database path
 TARGET_DIR=/target                 # Organized photos directory
 INPUT_DIR=/input                   # Scan directory
+DUPLICATES_DIR=/duplicates         # Duplicates directory (separate from input)
 INDEXER_THROTTLE_MS=500           # Delay between file processing (ms)
 ```
 
@@ -132,13 +140,15 @@ INDEXER_THROTTLE_MS=500           # Delay between file processing (ms)
 - `/app/data`: SQLite database storage (persistent)
 - `/target`: Organized photos storage (NAS mount)
 - `/input`: Input folder for scanning (SMB/WebDAV sync)
+- `/duplicates`: Duplicate files directory (separate from input, for user review)
 
 ## API Endpoints
 
 - `GET /api/stats` - Get database statistics
 - `POST /api/upload` - Upload single file
 - `POST /api/upload/multiple` - Upload multiple files
-- `POST /api/indexer/start` - Start background indexing
+- `POST /api/indexer/index-target` - Index target directory (build database)
+- `POST /api/indexer/scan-input` - Scan input directory (process new uploads)
 - `POST /api/indexer/stop` - Stop background indexing
 - `GET /api/indexer/status` - Get indexer status
 - `GET /api/indexer/jobs` - Get indexing job history

@@ -28,7 +28,7 @@ cd ../..
 
 # Create necessary directories
 echo "📁 Creating directories..."
-mkdir -p data target input input/duplicates
+mkdir -p data target input duplicates
 
 # Copy .env.example to .env if it doesn't exist
 if [ ! -f .env ]; then
