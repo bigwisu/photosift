@@ -144,22 +144,43 @@ class BackgroundIndexer {
    * Filters for image and video files only
    */
   getAllFiles(dirPath, arrayOfFiles = []) {
-    const files = fs.readdirSync(dirPath);
+    let files;
+    
+    // Handle permission errors gracefully
+    try {
+      files = fs.readdirSync(dirPath);
+    } catch (error) {
+      if (error.code === 'EACCES' || error.code === 'EPERM') {
+        console.log(`Skipping directory (permission denied): ${dirPath}`);
+        return arrayOfFiles;
+      }
+      throw error;
+    }
 
     files.forEach(file => {
       const filePath = path.join(dirPath, file);
       
-      // Skip duplicates folder
-      if (file === 'duplicates') {
+      // Skip system directories
+      if (file === 'duplicates' || file === 'lost+found' || file.startsWith('.')) {
         return;
       }
 
-      if (fs.statSync(filePath).isDirectory()) {
-        arrayOfFiles = this.getAllFiles(filePath, arrayOfFiles);
-      } else {
-        // Only process image and video files
-        if (this.isMediaFile(file)) {
-          arrayOfFiles.push(filePath);
+      try {
+        const stats = fs.statSync(filePath);
+        
+        if (stats.isDirectory()) {
+          arrayOfFiles = this.getAllFiles(filePath, arrayOfFiles);
+        } else {
+          // Only process image and video files
+          if (this.isMediaFile(file)) {
+            arrayOfFiles.push(filePath);
+          }
+        }
+      } catch (error) {
+        if (error.code === 'EACCES' || error.code === 'EPERM') {
+          console.log(`Skipping file (permission denied): ${filePath}`);
+        } else {
+          console.error(`Error accessing ${filePath}:`, error.message);
         }
       }
     });
