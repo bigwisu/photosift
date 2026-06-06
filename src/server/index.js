@@ -46,6 +46,7 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     const allowedMimes = [
       'image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp',
+      'image/heic', 'image/heif',
       'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'
     ];
     if (allowedMimes.includes(file.mimetype)) {

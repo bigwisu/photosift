@@ -201,6 +201,7 @@ class BackgroundIndexer {
     const ext = path.extname(filename).toLowerCase();
     const supportedExtensions = [
       '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp',
+      '.heic', '.heif',
       '.mp4', '.mov', '.avi', '.mkv'
     ];
     return supportedExtensions.includes(ext);
