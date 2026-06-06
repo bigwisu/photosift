@@ -17,7 +17,9 @@ RUN apk add --no-cache \
     python3 \
     make \
     g++ \
-    vips-dev
+    vips-dev \
+    libheif-dev \
+    libde265-dev
 
 # Install dependencies
 COPY package*.json ./
