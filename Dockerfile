@@ -13,17 +13,21 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Install Sharp dependencies for HEIC conversion
+# Must install HEIF libraries BEFORE npm install so Sharp compiles with HEIF support
 RUN apk add --no-cache \
     python3 \
     make \
     g++ \
     vips-dev \
+    libheif \
     libheif-dev \
-    libde265-dev
+    libde265 \
+    libde265-dev \
+    pkgconfig
 
-# Install dependencies
+# Install dependencies (Sharp will compile with HEIF support)
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm install --omit=dev --build-from-source sharp
 
 # Copy backend source
 COPY src/server/ ./src/server/
