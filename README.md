@@ -1,14 +1,19 @@
 <div align="center">
-  # PhotoSift - NAS Photo Deduplicator
-  
-  A web-based photo backup system that automatically organizes photos by date, detects duplicates, and provides a clean interface for managing your photo library.
-  
-  ---
   <img src="docs/images/bob-logo.png" alt="Bob Logo" width="200"/>
+</div>
 
-  **Built by IBM Bob** - A personal photo management solution for Ubuntu-based NAS systems.
+# PhotoSift - NAS Photo Deduplicator
+
+<div align="center">
   
-  *Proof that Spec-Driven Development with AI is faster than searching for the perfect app!*
+A web-based photo backup system that automatically organizes photos by date, detects duplicates, and provides a clean interface for managing your photo library.
+
+---
+
+**Built by IBM Bob** - A personal photo management solution for Ubuntu-based NAS systems.
+
+*Proof that Spec-Driven Development with AI is faster than searching for the perfect app!*
+
 </div>
 
 ## Features
