@@ -51,7 +51,7 @@
   flex: 1;
 }
 
-.stat-value {
+.stat-card .stat-value {
   font-size: 2rem;
   font-weight: 700;
   margin-bottom: 0.25rem;
@@ -59,7 +59,7 @@
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.stat-label {
+.stat-card .stat-label {
   font-size: 0.9rem;
   color: #ffffff;
   opacity: 1;
