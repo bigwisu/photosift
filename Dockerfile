@@ -12,6 +12,13 @@ RUN npm run build
 FROM node:18-alpine
 WORKDIR /app
 
+# Install Sharp dependencies for HEIC conversion
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    vips-dev
+
 # Install dependencies
 COPY package*.json ./
 RUN npm install --omit=dev
@@ -33,6 +40,7 @@ ENV TARGET_DIR=/target
 ENV INPUT_DIR=/input
 ENV DUPLICATES_DIR=/duplicates
 ENV INDEXER_THROTTLE_MS=500
+ENV HEIC_CONVERT_QUALITY=90
 
 # Expose port
 EXPOSE 3000
