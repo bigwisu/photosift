@@ -72,7 +72,7 @@ class FileProcessor {
 
   /**
    * Process uploaded file:
-   * 1. Convert HEIC to JPEG if needed
+   * 1. Convert HEIC to JPEG if enabled and needed
    * 2. Compute hash from buffer (before saving)
    * 3. Check for duplicates
    * 4. Extract date
@@ -80,8 +80,9 @@ class FileProcessor {
    * 6. Index in database
    */
   async processUploadedFile(fileBuffer, originalFilename, mimeType) {
-    // Step 1: Convert HEIC to JPEG if needed
-    if (this.heicConverter.isHeic(originalFilename)) {
+    // Step 1: Convert HEIC to JPEG if enabled
+    const heicAutoConvert = process.env.HEIC_AUTO_CONVERT === 'true';
+    if (heicAutoConvert && this.heicConverter.isHeic(originalFilename)) {
       console.log(`Converting HEIC file: ${originalFilename}`);
       const converted = await this.heicConverter.convertToJpeg(fileBuffer, originalFilename);
       fileBuffer = converted.buffer;
@@ -162,15 +163,16 @@ class FileProcessor {
    * Does NOT move files, only indexes them in database
    * INCREMENTAL: Skips files that haven't changed since last scan
    * MIGRATION-SAFE: Handles mtime=0 for migrated databases
-   * HEIC-AWARE: Converts HEIC files to JPEG during indexing
+   * HEIC-AWARE: Converts HEIC files to JPEG during indexing (if enabled)
    */
   async indexTargetFile(filePath, originalFilename) {
-    // Step 1: Handle HEIC conversion if needed
+    // Step 1: Handle HEIC conversion if enabled
     let fileToProcess = filePath;
     let filenameToUse = originalFilename;
     let tempFilePath = null;
     
-    if (this.heicConverter.isHeic(originalFilename)) {
+    const heicAutoConvert = process.env.HEIC_AUTO_CONVERT === 'true';
+    if (heicAutoConvert && this.heicConverter.isHeic(originalFilename)) {
       console.log(`Converting HEIC file during indexing: ${originalFilename}`);
       const converted = await this.heicConverter.convertFile(filePath);
       
@@ -268,15 +270,16 @@ class FileProcessor {
   /**
    * Process file from input directory (for scanning new uploads)
    * Checks against database and moves duplicates
-   * HEIC-AWARE: Converts HEIC files to JPEG before processing
+   * HEIC-AWARE: Converts HEIC files to JPEG before processing (if enabled)
    */
   async processInputFile(filePath, originalFilename) {
-    // Step 1: Handle HEIC conversion if needed
+    // Step 1: Handle HEIC conversion if enabled
     let fileToProcess = filePath;
     let filenameToUse = originalFilename;
     let convertedBuffer = null;
     
-    if (this.heicConverter.isHeic(originalFilename)) {
+    const heicAutoConvert = process.env.HEIC_AUTO_CONVERT === 'true';
+    if (heicAutoConvert && this.heicConverter.isHeic(originalFilename)) {
       console.log(`Converting HEIC file from input: ${originalFilename}`);
       const converted = await this.heicConverter.convertFile(filePath);
       convertedBuffer = converted.buffer;
