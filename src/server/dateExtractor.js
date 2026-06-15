@@ -14,7 +14,7 @@ class DateExtractor {
     this.patterns = [
       {
         name: 'WhatsApp',
-        regex: /WhatsApp (?:Image|Video) (\d{4})-(\d{2})-(\d{2}) at (\d{2})\.(\d{2})\.(\d{2})\.(jpeg|mp4|jpg)/i,
+        regex: /WhatsApp (?:Image|Video) (\d{4})-(\d{2})-(\d{2}) at (\d{2})\.(\d{2})\.(\d{2})(?: \(\d+\))?\.(jpeg|mp4|jpg)/i,
         extract: (match) => new Date(
           parseInt(match[1]), // year
           parseInt(match[2]) - 1, // month (0-indexed)
